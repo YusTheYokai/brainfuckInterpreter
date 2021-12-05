@@ -2,8 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "logging.h"
 #define ALLOCATION_ERROR 1
 #define SYNTAX_ERROR 2
+#define FILE_NOT_FOUND_ERROR 3
+#define INVALID_ARGUMENTS_ERROR 4
 #define ALLOCATION_SIZE 50
 
 // ////////////////////////////////////////////////////////////////////////////
@@ -27,7 +30,7 @@ typedef enum operator {
 
 void checkAllocation(void* pointer) {
     if (pointer == NULL) {
-        printf("[ERROR] Speicher konnte nicht zugewiesen werden.\n");
+        logError("Speicher konnte nicht zugewiesen werden.");
         exit(ALLOCATION_ERROR);
     }
 }
@@ -51,6 +54,12 @@ int isValidOperator(char toValidate) {
  */
 char* readFile(const char* fileName) {
     FILE* file = fopen(fileName, "r");
+
+    if (!file) {
+        logError("File could not be found!");
+        exit(FILE_NOT_FOUND_ERROR);
+    }
+
     int i = 0;
     char c;
     char* code = malloc(ALLOCATION_SIZE);
@@ -74,6 +83,27 @@ char* readFile(const char* fileName) {
 }
 
 // ////////////////////////////////////////////////////////////////////////////
+// AUSGABE
+// ////////////////////////////////////////////////////////////////////////////
+
+void print(char* code) {
+    for (int i = 0; i < strlen(code); i++) {
+        if (code[i] == RIGHT || code[i] == LEFT) {
+            printf("%s", KBLU);
+        } else if (code[i] == PLUS || code[i] == MINUS) {
+            printf("%s", KGRN);
+        } else if (code[i] == PRINT || code[i] == READ) {
+            printf("%s", KYEL);
+        } else if (code[i] == BEGIN_WHILE || code[i] == END_WHILE) {
+            printf("%s", KRED);
+        }
+        printf("%c", code[i]);
+        printf("%s", KNRM);
+    }
+    printf("\n");
+}
+
+// ////////////////////////////////////////////////////////////////////////////
 // AUSFÜHREN
 // ////////////////////////////////////////////////////////////////////////////
 
@@ -84,9 +114,14 @@ char* readFile(const char* fileName) {
  * @returns den Index der Klammer oder -1, falls keien Klammer gefunden werden konnte.
  */
 int findEndWhile(char* code, int start) {
+    int openBrackets = 0;
     while (code[start] != '\0') {
-        if (code[start] == END_WHILE) {
+        if (code[start] == END_WHILE && openBrackets == 0) {
             return start;
+        } else if (code[start] == END_WHILE) {
+            openBrackets--;
+        } else if (code[start] == BEGIN_WHILE) {
+            openBrackets++;
         }
         start++;
     }
@@ -131,18 +166,18 @@ void executeCodeSnippet(char* code, int* cells, int* pointer, int start, int end
         } else if (code[i] == BEGIN_WHILE) {
             executeWhile(code, cells, pointer, &i);
         } else if (code[i] == END_WHILE) {
-            printf("\n[WARN] Encountered closing bracket. This should not happen.\n");
+            logWarning("Encountered closing bracket. This should not happen.");
         } else {
-            printf("\n[WARN] Encountered unrecognized operator: %c. Will skip it.\n", code[i]);
+            logUnknownOperatorSyntaxError(code[i]);
         }
     }
 }
 
 void executeWhile(char* code, int* cells, int* pointer, int* i) {
     // nächste schließende Klammer
-    int endWhile = findEndWhile(code, *i);
-    if (!endWhile) {
-        printf("\n[SYNTAX ERROR] Failed to find closing bracket for bracking at position: %d.\n", *i);
+    int endWhile = findEndWhile(code, *i + 1);
+    if (endWhile == -1) {
+        logMissingClosingBracket(*i);
         exit(SYNTAX_ERROR);
     }
 
@@ -170,18 +205,37 @@ void executeCode(char* code) {
 // ////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char const *argv[]) {
-    printf("[INFO] Reading file...\n");
-    clock_t readingTime = clock();
+    if (argc != 2 && argc != 3) {
+        logError("Invalid amount of arguments.");
+        logCommandStructure();
+        exit(INVALID_ARGUMENTS_ERROR);
+    } else if (argc == 3 && strcmp(argv[2], "-c")) {
+        char msg[1024];
+        strcat(msg, "Invalid argument: ");
+        strcat(msg, argv[2]);
+        logger(KRED, ERROR, msg);
+        logCommandStructure();
+        exit(INVALID_ARGUMENTS_ERROR);
+    }
+
+    // Datei einlesen
+    logInfo("Reading file...");
     char* code = readFile(argv[1]);
-    readingTime = clock() - readingTime;
-    printf("[INFO] File has been read.\n");
-    printf("[INFO] Executing read code...\n");
+    logInfo("File has been read.");
+
+    // Brainfuck Code ausgeben, falls Flag gesetzt wurde
+    if (argc == 3) {
+        print(code);
+    }
+
+    // Brainfuck Code ausführen
+    logInfo("Executing read code...");
     clock_t executionTime = clock();
     executeCode(code);
     executionTime = clock() - executionTime;
 
-    float time = ((double)executionTime)/CLOCKS_PER_SEC;
+    int time = executionTime / CLOCKS_PER_SEC;
 
-    printf("\n[INFO] Code has been executed. It took %fs to execute.", time);
+    logTime(time);
     return 0;
 }
