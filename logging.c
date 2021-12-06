@@ -14,6 +14,27 @@
 #define ERROR "ERROR"
 #define SYNTAX_ERROR "SYNTAX_ERROR"
 
+// ////////////////////////////////////////////////////////////////////////////
+// FARBEN
+// ////////////////////////////////////////////////////////////////////////////
+
+// Anzahl der Farben, ohne die default-Farbe.
+const int colorCount = 5;
+// Alle Farben, ohne die default Farbe.
+const char* colors[] = {KYEL, KRED, KGRN, KBLU, KCYN};
+
+const int getColorCount() {
+    return colorCount;
+}
+
+const char** getColors() {
+    return colors;
+}
+
+// ////////////////////////////////////////////////////////////////////////////
+// LOGGING
+// ////////////////////////////////////////////////////////////////////////////
+
 void logger(char* color, char* level, char* message) {
     printf("%s[%s] %s%s\n", color, level, message, KNRM);
 }

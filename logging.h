@@ -9,6 +9,9 @@
 #define WARNING "WARN"
 #define ERROR "ERROR"
 
+const int getColorCount();
+const char** getColors();
+
 void logger(char* color, char* level, char* message);
 void logInfo(char* message);
 void logWarning(char* message);

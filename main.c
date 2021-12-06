@@ -2,11 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
 #include "logging.h"
+
 #define ALLOCATION_ERROR 1
 #define SYNTAX_ERROR 2
 #define FILE_NOT_FOUND_ERROR 3
 #define INVALID_ARGUMENTS_ERROR 4
+
+#define CODE_PARAM "-c"
+#define RAINBOW_PARAM "-r"
+
 #define ALLOCATION_SIZE 50
 
 // ////////////////////////////////////////////////////////////////////////////
@@ -32,6 +38,48 @@ void checkAllocation(void* pointer) {
     if (pointer == NULL) {
         logError("Speicher konnte nicht zugewiesen werden.");
         exit(ALLOCATION_ERROR);
+    }
+}
+
+// ////////////////////////////////////////////////////////////////////////////
+// EINGABE
+// ////////////////////////////////////////////////////////////////////////////
+
+/*
+ * Prüft, ob der übergebene String ein valider Parameter ist.
+ */
+int validateParameter(const char* toValidate) {
+    return strcmp(toValidate, CODE_PARAM) == 0 || strcmp(toValidate, RAINBOW_PARAM) == 0;
+}
+
+int validateArguments(int argc, const char* argv[], int* codeFlag, int* rainbowFlag) {
+    int invalid = 0;
+    if (argc == 1) {
+        logError("Invalid amount of arguments.");
+        logCommandStructure();
+        exit(INVALID_ARGUMENTS_ERROR);
+    } else if (argc > 2) {
+        for (int i = 2; i < argc; i++) {
+            if (validateParameter(argv[i])) {
+                if (strcmp(argv[i], CODE_PARAM) == 0) {
+                    *codeFlag = 1;
+                } else {
+                    *rainbowFlag = 1;
+                }
+            } else {
+                invalid = 1;
+                char msg[1024];
+                msg[0] = '\0';
+                strcat(msg, "Invalid argument: ");
+                strcat(msg, argv[i]);
+                logger(KRED, ERROR, msg);
+            }
+        }
+
+        if (invalid) {
+            logCommandStructure();
+            exit(INVALID_ARGUMENTS_ERROR);
+        }
     }
 }
 
@@ -107,6 +155,13 @@ void print(char* code) {
     printf("\n");
 }
 
+/*
+ * Gibt eine Farbe zurück.
+ */
+const char* color(int i) {
+    return getColors()[i % getColorCount()];
+}
+
 // ////////////////////////////////////////////////////////////////////////////
 // AUSFÜHREN
 // ////////////////////////////////////////////////////////////////////////////
@@ -139,7 +194,7 @@ int findEndWhile(char* code, int start) {
  * @param pointer der globale Pointer
  * @param i globaler Zähler
  */
-void executeWhile(char* code, int* cells, int* pointer, int* i);
+void executeWhile(char* code, int* cells, int* pointer, int* i, int* printed, int rainbowFlag);
 
 /*
  * Führt ein Snippet Code aus.
@@ -149,7 +204,7 @@ void executeWhile(char* code, int* cells, int* pointer, int* i);
  * @param start Inklusiver Index, ab welchem der Code ausgeführt wird.
  * @param end Exklusiver Index, bis zu welchem der Code ausgefürt wird.
  */
-void executeCodeSnippet(char* code, int* cells, int* pointer, int start, int end) {
+void executeCodeSnippet(char* code, int* cells, int* pointer, int start, int end, int* printed, int rainbowFlag) {
     for (int i = start; i < end; i++) {
         if (code[i] == RIGHT) {
             if (*pointer % ALLOCATION_SIZE == ALLOCATION_SIZE - 1) {
@@ -164,11 +219,15 @@ void executeCodeSnippet(char* code, int* cells, int* pointer, int start, int end
         } else if (code[i] == MINUS) {
             cells[*pointer]--;
         } else if (code[i] == PRINT) {
-            printf("%c", (char) cells[*pointer]);
+            if (rainbowFlag && isprint(cells[*pointer])) {
+                printf("%s%c%s", color((*printed)++), (char) cells[*pointer], KNRM);
+            } else {
+                printf("%c", (char) cells[*pointer]);
+            }
         } else if (code[i] == READ) {
             scanf(" %c", &cells[*pointer]);
         } else if (code[i] == BEGIN_WHILE) {
-            executeWhile(code, cells, pointer, &i);
+            executeWhile(code, cells, pointer, &i, printed, rainbowFlag);
         } else if (code[i] == END_WHILE) {
             logWarning("Encountered closing bracket. This should not happen.");
         } else {
@@ -177,7 +236,7 @@ void executeCodeSnippet(char* code, int* cells, int* pointer, int start, int end
     }
 }
 
-void executeWhile(char* code, int* cells, int* pointer, int* i) {
+void executeWhile(char* code, int* cells, int* pointer, int* i, int* printed, int rainbowFlag) {
     // nächste schließende Klammer
     int endWhile = findEndWhile(code, *i + 1);
     if (endWhile == -1) {
@@ -186,7 +245,7 @@ void executeWhile(char* code, int* cells, int* pointer, int* i) {
     }
 
     while (cells[*pointer] != 0) {
-        executeCodeSnippet(code, cells, pointer, *i + 1, endWhile);
+        executeCodeSnippet(code, cells, pointer, *i + 1, endWhile, printed, rainbowFlag);
     }
     // i um die Differenz der öffnenden und schließenden Klammer erhöhen,
     *i += endWhile - *i;
@@ -196,11 +255,12 @@ void executeWhile(char* code, int* cells, int* pointer, int* i) {
  * Führt Brainfuck Code aus.
  * @param code der auszuführende Code
  */
-void executeCode(char* code) {
+void executeCode(char* code, int rainbowFlag) {
     int pointer = 0;
     int* cells = calloc(ALLOCATION_SIZE, sizeof(int));
     checkAllocation(cells);
-    executeCodeSnippet(code, cells, &pointer, 0, strlen(code));
+    int printed = 0;
+    executeCodeSnippet(code, cells, &pointer, 0, strlen(code), &printed, rainbowFlag);
     free(cells);
 }
 
@@ -209,19 +269,9 @@ void executeCode(char* code) {
 // ////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char const *argv[]) {
-    if (argc != 2 && argc != 3) {
-        logError("Invalid amount of arguments.");
-        logCommandStructure();
-        exit(INVALID_ARGUMENTS_ERROR);
-    } else if (argc == 3 && strcmp(argv[2], "-c")) {
-        char msg[1024];
-        msg[0] = '\0';
-        strcat(msg, "Invalid argument: ");
-        strcat(msg, argv[2]);
-        logger(KRED, ERROR, msg);
-        logCommandStructure();
-        exit(INVALID_ARGUMENTS_ERROR);
-    }
+    int codeFlag = 0;
+    int rainbowFlag = 0;
+    validateArguments(argc, argv, &codeFlag, &rainbowFlag);
 
     // Datei einlesen
     logInfo("Reading file...");
@@ -229,14 +279,14 @@ int main(int argc, char const *argv[]) {
     logInfo("File has been read.");
 
     // Brainfuck Code ausgeben, falls Flag gesetzt wurde
-    if (argc == 3) {
+    if (codeFlag) {
         print(code);
     }
 
     // Brainfuck Code ausführen
     logInfo("Executing read code...\n");
     clock_t executionTime = clock();
-    executeCode(code);
+    executeCode(code, rainbowFlag);
     printf("\n\n");
     executionTime = clock() - executionTime;
 
