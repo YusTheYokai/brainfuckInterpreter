@@ -86,6 +86,10 @@ char* readFile(const char* fileName) {
 // AUSGABE
 // ////////////////////////////////////////////////////////////////////////////
 
+/*
+ * Gibt den Code mit Syntax-Highlighting aus.
+ * @param code der Code
+ */
 void print(char* code) {
     for (int i = 0; i < strlen(code); i++) {
         if (code[i] == RIGHT || code[i] == LEFT) {
@@ -211,6 +215,7 @@ int main(int argc, char const *argv[]) {
         exit(INVALID_ARGUMENTS_ERROR);
     } else if (argc == 3 && strcmp(argv[2], "-c")) {
         char msg[1024];
+        msg[0] = '\0';
         strcat(msg, "Invalid argument: ");
         strcat(msg, argv[2]);
         logger(KRED, ERROR, msg);
@@ -229,9 +234,10 @@ int main(int argc, char const *argv[]) {
     }
 
     // Brainfuck Code ausführen
-    logInfo("Executing read code...");
+    logInfo("Executing read code...\n");
     clock_t executionTime = clock();
     executeCode(code);
+    printf("\n\n");
     executionTime = clock() - executionTime;
 
     int time = executionTime / CLOCKS_PER_SEC;

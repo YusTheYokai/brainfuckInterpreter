@@ -40,6 +40,7 @@ void logUnknownOperatorSyntaxError(char unknownOperator) {
     operator[0] = unknownOperator;
     operator[1] = '\0';
     char msg[1024];
+    msg[0] = '\0';
     strcat(msg, "Encountered unknown operator: ");
     strcat(msg, operator);
     strcat(msg, " Will skip it.");
@@ -50,6 +51,7 @@ void logMissingClosingBracket(int position) {
     char pos[12];
     sprintf(pos, "%d", position);
     char msg[1024];
+    msg[0] = '\0';
     strcat(msg, "Failed to find closing bracket for bracket at position: ");
     strcat(msg, pos);
     logger(KRED, SYNTAX_ERROR, msg);
@@ -59,6 +61,7 @@ void logTime(int time) {
     char t[12];
     sprintf(t, "%d", time);
     char msg[1024];
+    msg[0] = '\0';
     strcat(msg, "Code has been executed. It took ");
     strcat(msg, t);
     strcat(msg, "s to execute.");
