@@ -196,7 +196,7 @@ int findEndWhile(char* code, int start) {
  * @param pointer der globale Pointer
  * @param i globaler Zähler
  */
-void executeWhile(char* code, int* cells, int* pointer, int* i, int* printed, int rainbowFlag);
+void executeWhile(char* code, int* cells, int* pointer, int* allocationCount, int* i, int* printed, int rainbowFlag);
 
 /*
  * Führt ein Snippet Code aus.
@@ -206,12 +206,15 @@ void executeWhile(char* code, int* cells, int* pointer, int* i, int* printed, in
  * @param start Inklusiver Index, ab welchem der Code ausgeführt wird.
  * @param end Exklusiver Index, bis zu welchem der Code ausgefürt wird.
  */
-void executeCodeSnippet(char* code, int* cells, int* pointer, int start, int end, int* printed, int rainbowFlag) {
+void executeCodeSnippet(char* code, int* cells, int* pointer, int* allocationCount, int start, int end, int* printed, int rainbowFlag) {
     for (int i = start; i < end; i++) {
         if (code[i] == RIGHT) {
-            if (*pointer % ALLOCATION_SIZE == ALLOCATION_SIZE - 1) {
-                cells = realloc(cells, *pointer + 1 + ALLOCATION_SIZE);
+            if (*pointer == *allocationCount * ALLOCATION_SIZE - 1) {
+                cells = realloc(cells, ++(*allocationCount) * ALLOCATION_SIZE * sizeof(int));
                 checkAllocation(code);
+                for (int j = *pointer + 1; j <= *pointer + ALLOCATION_SIZE; j++) {
+                    cells[j] = 0;
+                }
             }
             (*pointer)++;
         } else if (code[i] == LEFT) {
@@ -229,7 +232,7 @@ void executeCodeSnippet(char* code, int* cells, int* pointer, int start, int end
         } else if (code[i] == READ) {
             scanf(" %c", &cells[*pointer]);
         } else if (code[i] == BEGIN_WHILE) {
-            executeWhile(code, cells, pointer, &i, printed, rainbowFlag);
+            executeWhile(code, cells, pointer, allocationCount, &i, printed, rainbowFlag);
         } else if (code[i] == END_WHILE) {
             logWarning("Encountered closing bracket. This should not happen.");
         } else {
@@ -238,7 +241,7 @@ void executeCodeSnippet(char* code, int* cells, int* pointer, int start, int end
     }
 }
 
-void executeWhile(char* code, int* cells, int* pointer, int* i, int* printed, int rainbowFlag) {
+void executeWhile(char* code, int* cells, int* pointer, int* allocationCount, int* i, int* printed, int rainbowFlag) {
     // die passende schließende Klammer finden
     int endWhile = findEndWhile(code, *i + 1);
     if (endWhile == -1) {
@@ -246,8 +249,8 @@ void executeWhile(char* code, int* cells, int* pointer, int* i, int* printed, in
         exit(SYNTAX_ERROR);
     }
 
-    while (cells[*pointer] != 0) {
-        executeCodeSnippet(code, cells, pointer, *i + 1, endWhile, printed, rainbowFlag);
+    while (cells[*pointer]) {
+        executeCodeSnippet(code, cells, pointer, allocationCount, *i + 1, endWhile, printed, rainbowFlag);
     }
     // i um die Differenz der öffnenden und schließenden Klammer erhöhen,
     *i += endWhile - *i;
@@ -258,11 +261,12 @@ void executeWhile(char* code, int* cells, int* pointer, int* i, int* printed, in
  * @param code der auszuführende Code
  */
 void executeCode(char* code, int rainbowFlag) {
-    int pointer = 0;
     int* cells = calloc(ALLOCATION_SIZE, sizeof(int));
     checkAllocation(cells);
+    int pointer = 0;
+    int allocationCount = 1;
     int printed = 0;
-    executeCodeSnippet(code, cells, &pointer, 0, strlen(code), &printed, rainbowFlag);
+    executeCodeSnippet(code, cells, &pointer, &allocationCount, 0, strlen(code), &printed, rainbowFlag);
     free(cells);
 }
 
