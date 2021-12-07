@@ -126,6 +126,8 @@ char* readFile(const char* fileName) {
             code[i++] = c;
         }
     }
+    fclose(file);
+
     code[i] = '\0';
     return code;
 }
@@ -237,7 +239,7 @@ void executeCodeSnippet(char* code, int* cells, int* pointer, int start, int end
 }
 
 void executeWhile(char* code, int* cells, int* pointer, int* i, int* printed, int rainbowFlag) {
-    // nächste schließende Klammer
+    // die passende schließende Klammer finden
     int endWhile = findEndWhile(code, *i + 1);
     if (endWhile == -1) {
         logMissingClosingBracket(*i);
