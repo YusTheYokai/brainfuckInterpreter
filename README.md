@@ -1,5 +1,5 @@
 # Brainfuck Interpreter written in C
-A brainfuck interpreter written in C by a first semester FH Technium Wien student.
+A brainfuck interpreter written in C by a first semester FH Technikum Wien student.
 
 ## Build
 A C Compiler will be needed for compiling. Using GCC, this can be done such as:
