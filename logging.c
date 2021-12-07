@@ -53,7 +53,7 @@ void logError(char* message) {
 
 void logCommandStructure() {
     printf("Command must be structured in the following way:\n");
-    printf("%s[brainfuckInterpreter]%s [relativeFilePath] %s{-c}%s\n", KGRN, KBLU, KCYN, KNRM);
+    printf("%s[brainfuckInterpreter]%s [relativeFilePath] %s{-c -r}%s\n", KGRN, KBLU, KCYN, KNRM);
 }
 
 void logUnknownOperatorSyntaxError(char unknownOperator) {
