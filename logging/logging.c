@@ -2,18 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define KNRM  "\x1B[0m"
-#define KYEL  "\x1B[33m"
-#define KRED  "\x1B[31m"
-#define KGRN  "\x1B[32m"
-#define KBLU  "\x1B[34m"
-#define KCYN  "\x1B[36m"
-
-#define INFO "INFO"
-#define WARNING "WARN"
-#define ERROR "ERROR"
-#define SYNTAX_ERROR "SYNTAX_ERROR"
-
 // ////////////////////////////////////////////////////////////////////////////
 // FARBEN
 // ////////////////////////////////////////////////////////////////////////////

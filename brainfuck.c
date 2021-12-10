@@ -3,12 +3,12 @@
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
-#include "logging.h"
+#include "logging/logging.h"
 
-#define ALLOCATION_ERROR 1
-#define SYNTAX_ERROR 2
-#define FILE_NOT_FOUND_ERROR 3
-#define INVALID_ARGUMENTS_ERROR 4
+#define ALLOCATION_ERROR_CODE 1
+#define SYNTAX_ERROR_CODE 2
+#define FILE_NOT_FOUND_ERROR_CODE 3
+#define INVALID_ARGUMENTS_ERROR_CODE 4
 
 #define CODE_PARAM "-c"
 #define RAINBOW_PARAM "-r"
@@ -37,7 +37,7 @@ typedef enum operator {
 void checkAllocation(void* pointer) {
     if (pointer == NULL) {
         logError("Speicher konnte nicht zugewiesen werden.");
-        exit(ALLOCATION_ERROR);
+        exit(ALLOCATION_ERROR_CODE);
     }
 }
 
@@ -57,7 +57,7 @@ int validateArguments(int argc, const char* argv[], int* codeFlag, int* rainbowF
     if (argc == 1) {
         logError("Invalid amount of arguments.");
         logCommandStructure();
-        exit(INVALID_ARGUMENTS_ERROR);
+        exit(INVALID_ARGUMENTS_ERROR_CODE);
     } else if (argc > 2) {
         for (int i = 2; i < argc; i++) {
             if (validateParameter(argv[i])) {
@@ -78,7 +78,7 @@ int validateArguments(int argc, const char* argv[], int* codeFlag, int* rainbowF
 
         if (invalid) {
             logCommandStructure();
-            exit(INVALID_ARGUMENTS_ERROR);
+            exit(INVALID_ARGUMENTS_ERROR_CODE);
         }
     }
 }
@@ -105,7 +105,7 @@ char* readFile(const char* fileName) {
 
     if (!file) {
         logError("File could not be found!");
-        exit(FILE_NOT_FOUND_ERROR);
+        exit(FILE_NOT_FOUND_ERROR_CODE);
     }
 
     int i = 0;
@@ -212,6 +212,7 @@ void executeCodeSnippet(char* code, int* cells, int* pointer, int* allocationCou
             if (*pointer == *allocationCount * ALLOCATION_SIZE - 1) {
                 cells = realloc(cells, ++(*allocationCount) * ALLOCATION_SIZE * sizeof(int));
                 checkAllocation(code);
+                
                 for (int j = *pointer + 1; j <= *pointer + ALLOCATION_SIZE; j++) {
                     cells[j] = 0;
                 }

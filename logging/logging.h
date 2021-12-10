@@ -8,6 +8,7 @@
 #define INFO "INFO"
 #define WARNING "WARN"
 #define ERROR "ERROR"
+#define SYNTAX_ERROR "SYNTAX_ERROR"
 
 /*
  * Gibt die Anzahl der Farben, ohne die default-Farbe zurück.
